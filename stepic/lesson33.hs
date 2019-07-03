@@ -18,6 +18,22 @@ fibStream = zipWith (+) (0:fibStream) (0:1:fibStream)
     | m < x = []
     | otherwise = (helper' (m-3) (3:acc) 3) : (helper' (m-7) (7:acc) 7) : [[]]
  -}
+coins ::(Ord a, Num a) => [a]
+coins = [2,3,7]
+
+change :: (Ord a, Num a) => a -> [[a]]
+change 0 = [[]]
+change amount = [ c:cs |c<-coins, amount>=c, cs<-change (amount - c) ]
+ 
+{-changeHelper :: Int ->  [Int]
+changeHelper summ  
+    | summ <= 0 = []    
+    | otherwise = [x : changeHelper (summ-x) | x <- [2,3,7]]
+  -}  
+check' :: Int -> Int -> Bool
+check' summ coin 
+    | summ < coin   = False
+    | otherwise     = True
 
 data Odd = Odd Integer 
     deriving (Eq, Show)

@@ -1,6 +1,4 @@
-import Data.List (sort)
-import Test.QuickCheck
-import Test.Hspec
+import Data.List (break)
 
 data Tree a = Empty | Node a (Tree a) (Tree a) deriving (Show)
 
@@ -28,75 +26,82 @@ freeTree =
             )  
         )  
 data Direction = L | R deriving (Show)
+data Crumb a = LeftCrumb a (Tree a) | RightCrumb a (Tree a) deriving (Show)
 
-type Breadcrumbs = [Direction]
-
-goLeft :: (Tree a, Breadcrumbs) -> (Tree a, Breadcrumbs)
-goLeft (Node _ l _, bs) = (l, L:bs)
-
-goRight :: (Tree a, Breadcrumbs) -> (Tree a, Breadcrumbs)
-goRight (Node _ _ r, bs) = (r, R:bs)
+type Breadcrumbs a = [Crumb a]
 
 x -: f = f x
+--type Breadcrumbs = [Direction]
 
-data Shape = Square { side :: Double} 
-            | Rectangle   { width :: Double, height :: Double }
-            | Triangle    { base :: Double, height :: Double }
-            | Circle      { radius :: Double }
-            | CustomShape { area :: Double } 
+goLeft :: (Tree a, Breadcrumbs a) -> (Tree a, Breadcrumbs a)
+goLeft (Node x l r, bs) = (l, LeftCrumb x r:bs)
 
-instance Show Shape where
-    show shape = show $ getArea shape
-    
-instance Eq Shape where
-    s1 == s2 = (getArea s1) == (getArea s2)
-    s1 /= s2 = not (s1 == s2)
+goRight :: (Tree a, Breadcrumbs a) -> (Tree a, Breadcrumbs a)
+goRight (Node x l r, bs) = (r, RightCrumb x l:bs)
 
-instance Ord Shape where
-    s1 `compare` s2 = (getArea s1) `compare` (getArea s2)
-    s1 < s2 = (getArea s1) < (getArea s2)
-    s1 <= s2 = (getArea s1) <= (getArea s2)
-    s1 > s2 = (getArea s1) > (getArea s2)
-    s1 >= s2 = (getArea s1) >= (getArea s2) 
+goUp :: (Tree a, Breadcrumbs a) -> (Tree a, Breadcrumbs a)
+goUp (t, LeftCrumb x r:bs)  = (Node x t r, bs)
+goUp (t, RightCrumb x l:bs) = (Node x l t, bs)
 
-getArea :: Shape -> Double
-getArea (Square side)       = side ^ 2
-getArea (Rectangle w h)     = w * h
-getArea (Triangle b h)      = b * (h / 2)
-getArea (Circle radius)     = pi * radius^2
-getArea (CustomShape  area) = area
+type Zipper a = (Tree a, Breadcrumbs a)
 
-shapes :: [Shape]
-shapes = [
-    CustomShape area,
-    Square side,
-    Circle radius,
-    Triangle triangleBase1 triangleHeight1,
-    Triangle triangleBase2 triangleHeight2,
-    Rectangle width height,
-    CustomShape area2]
-    where
-      area = 1.1234
-      side = 1.1234
-      radius = 1.1234
-      triangleBase1 = 2.0
-      triangleHeight1 = 5.0
-      triangleBase2 = 3.0
-      triangleHeight2 = 4.0
-      width = 4
-      height = 4
-      area2 = 16.1
+type ListZipper a = ([a], [a])
 
-shapes' :: [Shape]
-shapes' = [ CustomShape 15.673063743755279                --  15.673063743755279
-        , Rectangle 2.01488912603621 24.197796350094986 --  48.75587673984508
-        , Triangle 29.268710378065993 4.936875202650166 --  72.24798523951178
-        , Triangle 64.46167106615941 4.092651352236228  -- 131.90957262816212
-        , Rectangle 23.4477504800821 7.701123869846373  -- 180.574030916362
-        , Triangle 12.46499126092774 52.65998521541476] -- 328.20312775536445
+goForward :: ListZipper a -> ListZipper a
+goForward (x:xs, bs) = (xs, x:bs)
 
-main :: IO ()
-main = hspec $
-  describe "Example Tests" $
-    it "should work with example tests" $
-        forAll (shuffle shapes) (\ss -> sort shapes == shapes)
+goBack :: ListZipper a -> ListZipper a
+goBack (xs, b:bs) = (b:xs, bs)
+
+type Name = String
+type Data = String
+data FSItem = File Name Data | Folder Name [FSItem] deriving (Show)
+
+data FSCrumb = FSCrumb Name [FSItem] [FSItem] deriving (Show)
+
+type FSZipper = (FSItem, [FSCrumb])
+
+fsUp :: FSZipper -> FSZipper
+fsUp (item, FSCrumb name ls rs:bs) = (Folder name (ls ++ [item] ++ rs), bs)
+
+fsTo :: Name -> FSZipper -> FSZipper
+fsTo name (Folder folderName items, bs) =
+    let (ls, item:rs) = break (nameIs name) items
+    in (item, FSCrumb folderName ls rs:bs)
+
+nameIs :: Name -> FSItem -> Bool
+nameIs name (Folder folderName _) = name == folderName
+nameIs name (File fileName _) = name == fileName
+
+fsRename :: Name ->FSZipper -> FSZipper
+fsRename newName (Folder name items, bs) = (Folder newName items, bs)
+fsRename newName (File name dat, bs) = (File newName dat, bs)
+
+fsNewFile :: FSItem -> FSZipper -> FSZipper
+fsNewFile item (Folder folderName items, bs) =
+    (Folder folderName (item:items), bs)
+
+myDisk :: FSItem  
+myDisk = 
+    Folder "root"   
+        [ File "goat_yelling_like_man.wmv" "baaaaaa"  
+        , File "pope_time.avi" "god bless"  
+        , Folder "pics"  
+            [ File "ape_throwing_up.jpg" "bleargh"  
+            , File "watermelon_smash.gif" "smash!!"  
+            , File "skull_man(scary).bmp" "Yikes!"  
+            ]  
+        , File "dijon_poupon.doc" "best mustard"  
+        , Folder "programs"  
+            [ File "fartwizard.exe" "10gotofart"  
+            , File "owl_bandit.dmg" "mov eax, h00t"  
+            , File "not_a_virus.exe" "really not a virus"  
+            , Folder "source code"  
+                [ File "best_hs_prog.hs" "main = print (fix error)"  
+                , File "random.hs" "main = print 4"  
+                ]  
+            ]  
+        ]  
+
+
+

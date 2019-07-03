@@ -3,6 +3,9 @@ data Sign = Minus | Plus
 data Z = Z Sign [Bit]
 
 add :: Z -> Z -> Z
+add (Z S L1) (Z S L2) = 
+
+add :: Z -> Z -> Z
 add a b = sum a b Zero
     where 
         sum :: Z -> Z -> Bit -> Z
