@@ -99,6 +99,33 @@ pointList = [a,b,c,d,e]
 
 lineAngle (Point2D x1 y1) (Point2D x2 y2) = atan2 (x2-x1)  (y2-y1)
 
+{- filterPointByPolarAngle (Point2D x1 y1) (Point2D x2 y2) 
+    | (atan2 x1 y1) > (atan2 x2 y2) = GT
+    | otherwise                     = LG
+ -}
+subPoint2D :: Point2D -> Point2D -> Point2D 
+subPoint2D  (Point2D x1 y1) (Point2D x2 y2) = (Point2D (x1 - x2) (y1 - y2))
+
+addPoint2D :: Point2D -> Point2D -> Point2D 
+addPoint2D  (Point2D x1 y1) (Point2D x2 y2) = (Point2D (x1 + x2) (y1 + y2))
+
+dropDouble :: [Point2D] -> [Point2D]
+dropDouble (p1:p2:px) 
+    | p1 == p2 = p2 : dropDouble px
+
+toBasePointList :: [Point2D] -> Point2D -> [Point2D]
+toBasePointList [] p0       = []
+toBasePointList [p1] p0     = [subPoint2D p1 p0]
+toBasePointList [p1,p2] p0  = subPoint2D p1 p0 : subPoint2D p2 p0 : []
+toBasePointList (p:ps) p0   = (subPoint2D p p0) : toBasePointList ps p0
+
+fromBasePointList :: [Point2D] -> Point2D -> [Point2D]
+fromBasePointList [] p0         = []
+fromBasePointList [p1] p0       = [addPoint2D p1 p0]
+fromBasePointList [p1,p2] p0    = addPoint2D p1 p0 : addPoint2D p2 p0 : []
+fromBasePointList (p:ps) p0     = (addPoint2D p p0) : fromBasePointList ps p0
+ 
+
 calcDirection :: Point2D -> Point2D -> Point2D -> Direction
 calcDirection p1 p2 p3
     | la == ua = Straight'
@@ -114,6 +141,12 @@ directionList [a] = []
 directionList [a,_] = []
 directionList [a,b,c] = [(calcDirection a b c)]
 directionList (a:b:c:d) = (calcDirection a b c) : (directionList (b:c:d))
+
+findMin :: (Ord n) => [n] -> n
+findMin = head  . sort 
+
+
+
 
 pointsPairsSort pairs = sortBy comparison pairs
                             where comparison (angleA, distanceA, _) (angleB, distanceB, _) 
