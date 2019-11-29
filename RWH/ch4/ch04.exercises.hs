@@ -25,13 +25,24 @@ takeWhile' f [] = []
 takeWhile' f (x:xs) | (f x) = x : (takeWhile' f xs)
                     | otherwise = (takeWhile' f xs)
 
-{- int as_int(char *str)
-{
-    int acc; /* accumulate the partial result */
+takeWhile_foldr :: (a -> Bool) -> [a] -> [a]
+takeWhile_foldr f [] = []
+takeWhile_foldr f [x] | f x = [x]
+takeWhile_foldr f  x = foldr take' [] x 
+    where   take' x acc   | f x  = x : acc
+                          | otherwise = acc
 
-    for (acc = 0; isdigit(*str); str++) {
-	acc = acc * 10 + (*str - '0');
-    }
+groupBy_foldr :: (a -> a -> Bool) -> [a] -> [[a]]
+groupBy_foldr f x = reverse $ foldr step [] (reverse x)
+    where   step x [[]] = [[x]]   
+            step x (h@(hh:_):t)    | f hh x = (h ++ [x]) : t
+            step x acc =  [x] : acc
 
-    return acc;
-} -}
+groupBy_foldl :: (a -> a -> Bool) -> [a] -> [[a]]
+groupBy_foldl f l = reverse $ foldl step [] l
+    where   step (xs@(x:_):ys) e | f x e = (xs ++ [e]) : ys
+            step acc e = [e] : acc                                
+            
+
+
+                    
