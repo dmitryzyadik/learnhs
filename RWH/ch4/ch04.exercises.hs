@@ -1,4 +1,4 @@
-import Data.Char (digitToInt, isDigit) 
+import Data.Char (digitToInt, isDigit, isSpace) 
 
 type ErrorMessage = String
 
@@ -44,5 +44,13 @@ groupBy_foldl f l = reverse $ foldl step [] l
             step acc e = [e] : acc                                
             
 
+word_fold :: String -> [String]
+word_fold s = foldr step [] s
+    where step el [] = [[el]]
+          step el acc@(h:t) | not . isSpace $ el = [el : h] ++ t   
+                            | otherwise = []:acc          
 
-                    
+unlines_fold :: [String] -> String
+unlines_fold s = foldr (\e acc -> e ++ "\n" ++ acc) "" s
+    
+                                                
