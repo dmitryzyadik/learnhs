@@ -5,22 +5,29 @@ import Numeric (showHex)
 import Data.Char (ord)
 import Data.Bits (shiftR, (.&.))
 import SimpleJSON (JValue(..))
-import Prettify (Doc, (<>), char, double, fsep, hcat, punctuate, text, compact)--, pretty)
+import Prettify (Doc, (<>), char, double, fsep, hcat, punctuate, text, compact, pretty, fill)
 import Prelude hiding ((<>))
+--import PrettyStub
 
 renderJValue :: JValue -> Doc
 renderJValue (JBool True)   = text "true"
 renderJValue (JBool False)  = text "false"
 renderJValue JNull          = text "null"
 renderJValue (JNumber num)  = double num
-renderJValue (JString str)   = string str
-renderJValue (JObject obj) = series '{' '}' field obj                         
+renderJValue (JString str)  = string str
+renderJValue (JObject obj)  = series '{' '}' field obj                         
     where field (name, val) = string name
                             <> text ": "
                             <> renderJValue val
 
+
 enclose :: Char -> Char -> Doc -> Doc
 enclose left right x = char left <> x <> char right
+
+
+string :: String -> Doc
+string = enclose '"' '"' . hcat . map oneChar
+
 
 oneChar :: Char -> Doc
 oneChar c = case lookup c simpleEscapes of
@@ -31,16 +38,16 @@ oneChar c = case lookup c simpleEscapes of
 
 simpleEscapes :: [(Char, String)]
 simpleEscapes = zipWith ch "\b\n\f\r\t\\\"/" "bnfrt\\\"/"
-    where ch a b = (a, ['\\'.b])
+    where ch a b = (a, ['\\', b])
 
 smallHex :: Int -> Doc
-smallHex = text "\\u"
-            <> text (replicate (4  - lenght h ) '0')
+smallHex x = text "\\u"
+            <> text (replicate (4  - length h ) '0')
             <> text h
     where h = showHex x ""
 
 astral :: Int -> Doc    
-astral n = smalHex (a + 0xdc00) <> smalHex (b + 0xdc00)
+astral n = smallHex (a + 0xdc00) <> smallHex (b + 0xdc00)
     where   a = (n `shiftR` 10) .&. 0x3ff
             b = n .&. 0x3ff
 
@@ -50,6 +57,6 @@ hexEscape c | d < 0x10000 = smallHex d
     where d = ord c
 
 series :: Char -> Char -> (a -> Doc) -> [a] -> Doc
-series open close item = esclose open close
+series open close item = enclose open close
                         . fsep . punctuate (char ',') . map item
 

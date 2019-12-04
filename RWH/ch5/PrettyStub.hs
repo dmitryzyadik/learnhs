@@ -1,6 +1,7 @@
--- file: ch5/PrettyStub
+module PrettyStub (Doc, string) where
 
-import SimpleJSON
+--import SimpleJSON
+--import PrettyJSON (enclose) 
 
 data Doc = ToBeDefined
         deriving (Show)
@@ -25,3 +26,4 @@ hcat xs = undefined
 
 fsep :: [Doc] -> Doc
 fsep xs = undefined
+

@@ -11,11 +11,15 @@ module Prettify
     , fsep
     , (<>)
     , compact
+    , pretty
+    , fill
     ) where
 
 import SimpleJSON
 import Data.List (foldr1)
 import Prelude hiding ((<>))
+
+--import PutJSON
 
 pretty :: Int -> Doc -> String
 pretty width x = best 0 [x]
@@ -34,6 +38,42 @@ pretty width x = best 0 [x]
                          | otherwise                = b
                          where least = min width col
 
+fill :: Int -> Doc -> Doc
+fill width d = doc
+  where (width', doc) = walk 0 d
+        walk col d = -- walk :: Int -> Doc -> (Int
+          case d of
+            Empty         -> (col+0, Empty)
+            Char c        -> (col+1, Char c)
+            Text s        -> (col+length s, Text s)
+            Line          -> (0, addSpaces (width-col))
+            a `Union` b   -> (col, a `Union` b)
+            a `Concat` b  -> (bWidth, a' `Concat` b')
+              where (aWidth, a')    = walk col a
+                    (bWidth, b')    = walk aWidth b
+        addSpaces width 
+                      = text (replicate width ' ') `Concat` Line 
+
+nest :: Int -> Doc -> Doc
+nest width x = snd (handleNode 0 x)
+  where handleNode level d@(Char c) =
+          case c of
+            '[' -> (level + 1, d)
+            '{' -> (level + 1, d)
+            ']' -> (level - 1, d)
+            '}' -> (level - 1, d)
+            _   -> (level , d)
+        handleNode level Line
+          | level <= 0 = (level, Line)
+          | otherwise = (level, Line `Concat` Text (replicate level ' '))
+        handleNode level (a `Concat` b) =
+          case handleNode level a of
+            (level2, d2) -> case handleNode level2 b of
+            (level3, d3) -> (level3, d2 `Concat` d3)
+            
+        handleNode level (a `Union` b) =
+          (level, snd (handleNode level a) `Union` snd (handleNode level b))
+        handleNode level d = (level, d)
 
 punctuate :: Doc -> [Doc] -> [Doc]
 punctuate p []          = []
