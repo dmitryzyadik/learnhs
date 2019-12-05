@@ -17,3 +17,8 @@ stringEq (x:xs) (y:ys) = x == y && stringEq xs ys
 
 -- Everything else doesn't match
 stringEq _ _ = False
+
+class BasicEq a where
+    isEqual :: a -> a -> Bool
+
+    
